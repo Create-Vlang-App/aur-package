@@ -1,5 +1,7 @@
 # create-vlang-app — AUR package
 
+[![Release](https://img.shields.io/github/v/release/Create-Vlang-App/create-vlang-app?filter=create-vlang-app%40*&style=flat-square&label=Release)](https://github.com/Create-Vlang-App/create-vlang-app/releases/tag/create-vlang-app%400.1.0)
+[![Website](https://img.shields.io/badge/site-create--awesome--vlang--app.vercel.app-8B5CF6?style=flat-square)](https://create-awesome-vlang-app.vercel.app)
 [![Discord](https://img.shields.io/discord/1527933660764831825?label=Discord&logo=discord&logoColor=white)](https://discord.gg/dwFTsR7fK2)
 
 Arch Linux packaging for [create-vlang-app](https://github.com/Create-Vlang-App/create-vlang-app).
@@ -37,6 +39,8 @@ makepkg -d -si   # -d: skip pacman deps; V is already on PATH
 | Homebrew | `brew tap Create-Vlang-App/tap && brew install create-vlang-app` |
 | Source | Build from [create-vlang-app](https://github.com/Create-Vlang-App/create-vlang-app) |
 
+Browse templates and extensions: **[create-awesome-vlang-app.vercel.app](https://create-awesome-vlang-app.vercel.app)**
+
 ## Automation
 
 [`publish-aur.yml`](https://github.com/Create-Vlang-App/create-vlang-app/blob/main/.github/workflows/publish-aur.yml) retargets this PKGBUILD after each `create-vlang-app@X.Y.Z` Release.
@@ -46,6 +50,7 @@ makepkg -d -si   # -d: skip pacman deps; V is already on PATH
 - AUR: https://aur.archlinux.org/packages/create-vlang-app
 - CLI: https://github.com/Create-Vlang-App/create-vlang-app
 - Templates: https://github.com/Create-Vlang-App/cva-templates
+- Live site: https://create-awesome-vlang-app.vercel.app
 
 ## Contributors
 
