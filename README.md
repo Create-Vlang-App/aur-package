@@ -47,3 +47,4 @@ pushes to [aur.archlinux.org](https://aur.archlinux.org/packages/create-vlang-ap
 </a>
 
 Made with [contributors-img](https://contrib.rocks).
+Tracking create-vlang-app@0.1.0 (see create-vlang-app docs/AUR_RPC.md).
