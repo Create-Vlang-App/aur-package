@@ -33,8 +33,10 @@ jobs:
             archlinux:latest \
             bash -euo pipefail -c '
               pacman -Sy --noconfirm --needed pacman-contrib base-devel
-              makepkg --printsrcinfo > .SRCINFO.generated
-              diff -u .SRCINFO .SRCINFO.generated
+              useradd -m builder
+              chown -R builder:builder /work
+              runuser -u builder -- makepkg --printsrcinfo > /tmp/.SRCINFO.generated
+              diff -u .SRCINFO /tmp/.SRCINFO.generated
             '
 
       - name: Build package (non-root)
