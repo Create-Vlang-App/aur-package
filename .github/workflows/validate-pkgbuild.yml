@@ -1,0 +1,45 @@
+name: Validate PKGBUILD
+
+on:
+  pull_request:
+  push:
+    branches:
+      - main
+
+permissions:
+  contents: read
+
+jobs:
+  validate:
+    name: makepkg + .SRCINFO sync
+    runs-on: ubuntu-latest
+    container:
+      image: archlinux:latest
+    steps:
+      - name: Install build dependencies
+        run: |
+          pacman -Sy --noconfirm --needed base-devel vlang git sudo
+
+      - uses: actions/checkout@9c091bb21b7c1c1d1991bb908d89e4e9dddfe3e0 # v7.0.0
+
+      - name: Verify .SRCINFO matches PKGBUILD
+        run: |
+          set -euo pipefail
+          makepkg --printsrcinfo > .SRCINFO.generated
+          diff -u .SRCINFO .SRCINFO.generated
+
+      - name: Build package (non-root)
+        run: |
+          set -euo pipefail
+          useradd -m -G wheel builder
+          echo '%wheel ALL=(ALL) NOPASSWD: ALL' >> /etc/sudoers
+          chown -R builder:builder .
+          su builder -c 'makepkg -s --noconfirm --skippgpcheck'
+
+      - name: Smoke installed CLI
+        run: |
+          su builder -c '
+            set -euo pipefail
+            create-vlang-app --version | grep -qE "0\\.0\\.1"
+            create-vlang-app --help | grep -q list-templates
+          '
