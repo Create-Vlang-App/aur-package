@@ -1,6 +1,6 @@
 # Maintainer: Ulises Jeremias <ulisescf.24@gmail.com>
 pkgname=create-vlang-app
-pkgver=0.0.1
+pkgver=0.1.0
 pkgrel=1
 pkgdesc="V-native scaffolding CLI for the V programming language"
 arch=('x86_64' 'aarch64')
