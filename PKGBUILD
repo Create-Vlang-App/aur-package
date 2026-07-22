@@ -7,7 +7,8 @@ arch=('x86_64' 'aarch64')
 url="https://github.com/Create-Vlang-App/create-vlang-app"
 license=('MIT')
 depends=('git')
-makedepends=('vlang')
+# Build requires the V compiler from https://github.com/vlang/v (official bootstrap /
+# vlang/setup-v). Do NOT use the AUR `vlang` package — it is outdated and unused in CI.
 # GitHub tag archive for create-vlang-app@0.1.0
 _tag="create-vlang-app@${pkgver}"
 _srcdir="create-vlang-app-create-vlang-app-${pkgver}"
