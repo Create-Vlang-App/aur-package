@@ -8,24 +8,24 @@ url="https://github.com/Create-Vlang-App/create-vlang-app"
 license=('MIT')
 depends=('git')
 makedepends=('vlang')
-# Bootstrap pin until the first tag `create-vlang-app@X.Y.Z` exists.
-# `publish-aur.yml` in create-vlang-app retargets this to release tarballs.
-_commit=e5c07f5
-source=("${pkgname}-${pkgver}.tar.gz::https://github.com/Create-Vlang-App/create-vlang-app/archive/${_commit}.tar.gz")
-sha256sums=('2db15ba3f4992eb5dcf1dffbd5a26826e433a77523fb102c6e47d7c3d965d1de')
+# GitHub tag archive for create-vlang-app@0.1.0
+_tag="create-vlang-app@${pkgver}"
+_srcdir="create-vlang-app-create-vlang-app-${pkgver}"
+source=("${pkgname}-${pkgver}.tar.gz::https://github.com/Create-Vlang-App/create-vlang-app/archive/refs/tags/${_tag}.tar.gz")
+sha256sums=('f7c1f62f8eab3bcd4e55b05700924c864f182247ff7c050c39884f5013592729')
 
 prepare() {
-  cd "create-vlang-app-${_commit}"
+  cd "${_srcdir}"
   mkdir -p .vmodules
   ln -sfn "$PWD/modules/create_vlang_app_core" .vmodules/create_vlang_app_core
 }
 
 build() {
-  cd "create-vlang-app-${_commit}/modules/create_vlang_app"
+  cd "${_srcdir}/modules/create_vlang_app"
   VMODULES="$PWD/../../.vmodules" v -prod -o create-vlang-app .
 }
 
 package() {
-  cd "create-vlang-app-${_commit}/modules/create_vlang_app"
+  cd "${_srcdir}/modules/create_vlang_app"
   install -Dm755 create-vlang-app "$pkgdir/usr/bin/create-vlang-app"
 }

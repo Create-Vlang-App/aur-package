@@ -1,22 +1,14 @@
 # create-vlang-app — AUR package
 
-AUR package for [create-vlang-app](https://github.com/Create-Vlang-App/create-vlang-app).
+Arch Linux packaging for [create-vlang-app](https://github.com/Create-Vlang-App/create-vlang-app).
 
-Primary install path for V developers is **VPM**:
+Pinned to tag [`create-vlang-app@0.1.0`](https://github.com/Create-Vlang-App/create-vlang-app/releases/tag/create-vlang-app%400.1.0).
 
-```bash
-v install create-vlang-app
-```
-
-AUR is a secondary channel for Arch Linux users.
-
-## Install (Arch Linux)
+## Install
 
 ```bash
-# using yay
 yay -S create-vlang-app
-
-# using paru
+# or
 paru -S create-vlang-app
 ```
 
@@ -28,23 +20,26 @@ cd aur-package
 makepkg -si
 ```
 
+## Other channels
+
+| Channel | How |
+|---------|-----|
+| GitHub Release | [linux amd64 binary](https://github.com/Create-Vlang-App/create-vlang-app/releases/tag/create-vlang-app%400.1.0) |
+| Homebrew | `brew tap Create-Vlang-App/tap && brew install create-vlang-app` |
+| Source | Build from [create-vlang-app](https://github.com/Create-Vlang-App/create-vlang-app) |
+
 ## Automation
 
-The [`create-vlang-app` publish-aur workflow](https://github.com/Create-Vlang-App/create-vlang-app/blob/main/.github/workflows/publish-aur.yml)
-bumps `pkgver` / checksums after each GitHub Release tag `create-vlang-app@X.Y.Z` and
-pushes to [aur.archlinux.org](https://aur.archlinux.org/packages/create-vlang-app).
+[`publish-aur.yml`](https://github.com/Create-Vlang-App/create-vlang-app/blob/main/.github/workflows/publish-aur.yml) retargets this PKGBUILD after each `create-vlang-app@X.Y.Z` Release.
 
-## Source
+## Links
 
 - AUR: https://aur.archlinux.org/packages/create-vlang-app
-- GitHub CLI: https://github.com/Create-Vlang-App/create-vlang-app
-- VPM: `v install create-vlang-app`
+- CLI: https://github.com/Create-Vlang-App/create-vlang-app
+- Templates: https://github.com/Create-Vlang-App/cva-templates
 
 ## Contributors
 
 <a href="https://github.com/Create-Vlang-App/aur-package/contributors">
-  <img src="https://contrib.rocks/image?repo=Create-Vlang-App/aur-package"/>
+  <img src="https://contrib.rocks/image?repo=Create-Vlang-App/aur-package" alt="contrib.rocks"/>
 </a>
-
-Made with [contributors-img](https://contrib.rocks).
-Tracking create-vlang-app@0.1.0 (see create-vlang-app docs/AUR_RPC.md).
