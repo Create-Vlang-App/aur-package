@@ -9,37 +9,68 @@ on:
 permissions:
   contents: read
 
+# Never install V from the AUR `vlang` package (stale). Match create-vlang-app CI:
+# vlang/setup-v on ubuntu, then run makepkg inside an Arch container with that toolchain.
 jobs:
   validate:
     name: makepkg + .SRCINFO sync
     runs-on: ubuntu-latest
-    container:
-      image: archlinux:latest
     steps:
-      - name: Install build dependencies
-        run: |
-          pacman -Sy --noconfirm --needed base-devel vlang git sudo
-
       - uses: actions/checkout@9c091bb21b7c1c1d1991bb908d89e4e9dddfe3e0 # v7.0.0
+
+      - id: setup-v
+        uses: vlang/setup-v@12a9fab625c7fd9e51972eef71c84c3d4f41c45c
+        with:
+          version-file: .v-version
+          cache: true
 
       - name: Verify .SRCINFO matches PKGBUILD
         run: |
           set -euo pipefail
-          makepkg --printsrcinfo > .SRCINFO.generated
-          diff -u .SRCINFO .SRCINFO.generated
+          docker run --rm \
+            -v "$PWD:/work:rw" \
+            -w /work \
+            archlinux:latest \
+            bash -euo pipefail -c '
+              pacman -Sy --noconfirm --needed pacman-contrib base-devel
+              makepkg --printsrcinfo > .SRCINFO.generated
+              diff -u .SRCINFO .SRCINFO.generated
+            '
 
       - name: Build package (non-root)
+        env:
+          V_BIN_PATH: ${{ steps.setup-v.outputs.bin-path }}
         run: |
           set -euo pipefail
-          useradd -m -G wheel builder
-          echo '%wheel ALL=(ALL) NOPASSWD: ALL' >> /etc/sudoers
-          chown -R builder:builder .
-          su builder -c 'makepkg -s --noconfirm --skippgpcheck'
+          test -n "$V_BIN_PATH"
+          test -x "$V_BIN_PATH/v"
+          docker run --rm \
+            -v "$PWD:/work:rw" \
+            -v "$V_BIN_PATH:$V_BIN_PATH:ro" \
+            -e "PATH=${V_BIN_PATH}:/usr/local/sbin:/usr/local/bin:/usr/sbin:/usr/bin:/sbin:/bin" \
+            -w /work \
+            archlinux:latest \
+            bash -euo pipefail -c '
+              pacman -Sy --noconfirm --needed base-devel git sudo
+              useradd -m -G wheel builder
+              echo "%wheel ALL=(ALL) NOPASSWD: ALL" >> /etc/sudoers
+              chown -R builder:builder /work
+              # -d: do not pull AUR/pacman makedepends; V comes from setup-v
+              runuser -u builder -- env "PATH=$PATH" makepkg -d --noconfirm --skippgpcheck
+            '
 
       - name: Smoke installed CLI
         run: |
-          su builder -c '
-            set -euo pipefail
-            create-vlang-app --version | grep -qE "0\\.0\\.1"
-            create-vlang-app --help | grep -q list-templates
-          '
+          set -euo pipefail
+          docker run --rm \
+            -v "$PWD:/work:ro" \
+            -w /work \
+            archlinux:latest \
+            bash -euo pipefail -c '
+              pacman -Sy --noconfirm --needed tar
+              pkg=$(echo create-vlang-app-*.pkg.tar.*)
+              tar -xOf "$pkg" usr/bin/create-vlang-app > /tmp/create-vlang-app
+              chmod +x /tmp/create-vlang-app
+              /tmp/create-vlang-app --version | grep -qE "[0-9]+\\.[0-9]+\\.[0-9]+"
+              /tmp/create-vlang-app --help | grep -q list-templates
+            '

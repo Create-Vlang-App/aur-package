@@ -16,10 +16,17 @@ paru -S create-vlang-app
 
 ## Manual build
 
+Requires the **official V toolchain** (not the AUR `vlang` package — it is outdated).
+Same pin as CI: [`.v-version`](.v-version) via [`vlang/setup-v`](https://github.com/vlang/setup-v) or https://github.com/vlang/v.
+
 ```bash
+# Example: bootstrap V 0.5.2, then build the package
+git clone --depth 1 --branch 0.5.2 https://github.com/vlang/v ~/v && make -C ~/v
+export PATH="$HOME/v:$PATH"
+
 git clone https://github.com/Create-Vlang-App/aur-package.git
 cd aur-package
-makepkg -si
+makepkg -d -si   # -d: skip pacman deps; V is already on PATH
 ```
 
 ## Other channels
