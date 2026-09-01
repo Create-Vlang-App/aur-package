@@ -10,6 +10,80 @@ permissions:
   contents: read
 
 jobs:
+  lint:
+    name: PKGBUILD lint (shellcheck + drift)
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+
+      - name: Install shellcheck
+        run: |
+          set -euo pipefail
+          sudo apt-get update -qq
+          sudo apt-get install -y -qq shellcheck
+          echo "shellcheck $(shellcheck --version | grep version)"
+
+      - name: ShellCheck PKGBUILDs
+        run: |
+          set -euo pipefail
+          for pkg in create-awesome-vlang-app create-awesome-vlang-app-bin; do
+            echo "--- ShellCheck $pkg/PKGBUILD ---"
+            shellcheck --severity=warning --shell=bash \
+              --exclude=SC2034,SC2148,SC2154,SC2164 \
+              "$pkg/PKGBUILD" || {
+                echo "::warning::shellcheck warnings in $pkg/PKGBUILD"
+              }
+            bash -n "$pkg/PKGBUILD" && echo "bash -n $pkg OK"
+            test -f "$pkg/.SRCINFO" || { echo "::error::$pkg/.SRCINFO missing"; exit 1; }
+          done
+
+      - name: Version drift check (GitHub Release)
+        run: |
+          set -euo pipefail
+          GH_TAG=$(curl -sfL https://api.github.com/repos/Create-Vlang-App/create-vlang-app/releases/latest | jq -r '.tag_name')
+          GH_VER=${GH_TAG#create-vlang-app@}
+          echo "GitHub latest tag: $GH_TAG (version $GH_VER)"
+          for pkg in create-awesome-vlang-app create-awesome-vlang-app-bin; do
+            PKGVER=$(grep -E '^pkgver=' "$pkg/PKGBUILD" | cut -d= -f2)
+            echo "$pkg pkgver: $PKGVER"
+            if [ "$PKGVER" != "$GH_VER" ]; then
+              echo "::warning::$pkg pkgver ($PKGVER) differs from GitHub latest ($GH_VER)"
+            else
+              echo "$pkg version sync OK"
+            fi
+          done
+          # Verify shas: source tarball
+          FORMULA_SHA=$(grep -E "^sha256sums=" create-awesome-vlang-app/PKGBUILD | grep -Eo "'[^']+'" | tr -d "'" | head -1)
+          echo "Source PKGBUILD sha256: $FORMULA_SHA"
+          TMP=$(mktemp)
+          SRC_URL="https://github.com/Create-Vlang-App/create-vlang-app/archive/refs/tags/create-vlang-app@${GH_VER}.tar.gz"
+          curl -sfL "$SRC_URL" -o "$TMP"
+          ACT_SHA=$(sha256sum "$TMP" | cut -d' ' -f1)
+          rm -f "$TMP"
+          echo "Actual source tarball sha256: $ACT_SHA"
+          if [ "$FORMULA_SHA" != "$ACT_SHA" ]; then
+            echo "::warning::Source sha256 differs"
+          else
+            echo "Source SHA sync OK"
+          fi
+          # Bin sha
+          BIN_SHA=$(grep -E "^sha256sums=" create-awesome-vlang-app-bin/PKGBUILD | grep -Eo "'[^']+'" | tr -d "'" | head -1)
+          echo "Bin PKGBUILD sha256: $BIN_SHA"
+          BIN_URL="https://github.com/Create-Vlang-App/create-vlang-app/releases/download/create-vlang-app@${GH_VER}/create-vlang-app-linux-x86_64"
+          TMP=$(mktemp)
+          if curl -sfL "$BIN_URL" -o "$TMP"; then
+            BIN_ACT=$(sha256sum "$TMP" | cut -d' ' -f1)
+            rm -f "$TMP"
+            echo "Actual bin sha256: $BIN_ACT"
+            if [ "$BIN_SHA" != "$BIN_ACT" ]; then
+              echo "::warning::Bin sha256 differs"
+            else
+              echo "Bin SHA sync OK"
+            fi
+          else
+            echo "::warning::Could not fetch bin asset for $GH_VER"
+          fi
+
   srcinfo:
     name: .SRCINFO sync (${{ matrix.package }})
     runs-on: ubuntu-latest
@@ -28,11 +102,33 @@ jobs:
             -w "/work/${{ matrix.package }}" \
             archlinux:latest \
             bash -euo pipefail -c '
-              pacman -Sy --noconfirm --needed pacman-contrib base-devel
+              pacman -Sy --noconfirm --needed pacman-contrib base-devel >/dev/null 2>&1
               useradd -m builder
               chown -R builder:builder /work
               runuser -u builder -- makepkg --printsrcinfo > /tmp/.SRCINFO.generated
               diff -u .SRCINFO /tmp/.SRCINFO.generated
+            '
+
+  namcap:
+    name: namcap PKGBUILD
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+      - name: Run namcap (informational)
+        continue-on-error: true
+        run: |
+          set -euo pipefail
+          docker run --rm \
+            -v "$PWD:/work:rw" \
+            -w /work \
+            archlinux:latest \
+            bash -euo pipefail -c '
+              pacman -Sy --noconfirm --needed namcap pacman-contrib base-devel >/dev/null 2>&1
+              for pkg in create-awesome-vlang-app create-awesome-vlang-app-bin; do
+                echo "--- namcap $pkg ---"
+                namcap "$pkg/PKGBUILD" || true
+                namcap "$pkg/.SRCINFO" || true
+              done
             '
 
   build-bin:
@@ -49,14 +145,14 @@ jobs:
             -w /work/create-awesome-vlang-app-bin \
             archlinux:latest \
             bash -euo pipefail -c '
-              pacman -Sy --noconfirm --needed base-devel git sudo
+              pacman -Sy --noconfirm --needed base-devel git sudo >/dev/null 2>&1
               useradd -m -G wheel builder
               echo "%wheel ALL=(ALL) NOPASSWD: ALL" >> /etc/sudoers
               chown -R builder:builder /work
               runuser -u builder -- bash -euo pipefail -c "
                 makepkg -si --noconfirm --skippgpcheck
-                create-vlang-app --version | grep -qE \"[0-9]+\\.[0-9]+\\.[0-9]+\"
-                create-awesome-vlang-app --version | grep -qE \"[0-9]+\\.[0-9]+\\.[0-9]+\"
+                create-vlang-app --version | grep -qE \"[0-9]+\.[0-9]+\.[0-9]+\"
+                create-awesome-vlang-app --version | grep -qE \"[0-9]+\.[0-9]+\.[0-9]+\"
                 create-vlang-app --help | grep -q list-templates
               "
             '
